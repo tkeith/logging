@@ -40,6 +40,9 @@ class Logger(object):
                 else:
                     return cls(param, name)
 
+            def __repr__(self):
+                return '<Value: {}={}>'.format(self.param.name, self.name)
+
         self.Value = Value
 
         class Param(DBBase):
@@ -64,8 +67,8 @@ class Logger(object):
             def value(self, name):
                 return Value.get(self, name)
 
-            def __str__(self):
-                return '<Tag: {}>'.format(self.name)
+            def __repr__(self):
+                return '<Param: {}>'.format(self.name)
 
         self.Param = Param
 
@@ -87,6 +90,9 @@ class Logger(object):
                     return tag
                 else:
                     return cls(name)
+
+            def __repr__(self):
+                return '<Tag: {}>'.format(self.name)
 
         self.Tag = Tag
 
