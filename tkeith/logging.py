@@ -132,8 +132,9 @@ class Logger(object):
                 self.time = datetime.now()
                 self.parent = logger.current_parent
 
-                for tag in args:
-                    self.tags.append(Tag.get(tag))
+                for tag_name in args:
+                    tag = Tag.get(tag_name)
+                    self.tags.append(tag)
 
                 for name, value in kwargs.items():
                     param = Param.get(name)
