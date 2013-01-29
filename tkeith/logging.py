@@ -18,6 +18,14 @@ class Logger(object):
         db_session = orm.sessionmaker(bind=db_engine)()
         self.current_parent = None
 
+        @classmethod
+        def class_get_by_name(cls, name):
+            inst = db_session.query(cls).filter(cls.name == name).first()
+            if inst is not None:
+                return inst
+            else:
+                return cls(name)
+
         class Value(DBBase):
             __tablename__ = 'logger_values'
 
@@ -56,13 +64,7 @@ class Logger(object):
                 db_session.add(self)
                 db_session.commit()
 
-            @classmethod
-            def get(cls, name):
-                param = db_session.query(cls).filter(cls.name == name).first()
-                if param is not None:
-                    return param
-                else:
-                    return cls(name)
+            get = class_get_by_name
 
             def value(self, name):
                 return Value.get(self, name)
@@ -83,13 +85,7 @@ class Logger(object):
                 db_session.add(self)
                 db_session.commit()
 
-            @classmethod
-            def get(cls, name):
-                tag = db_session.query(cls).filter(cls.name == name).first()
-                if tag is not None:
-                    return tag
-                else:
-                    return cls(name)
+            get = class_get_by_name
 
             def __repr__(self):
                 return '<Tag: {}>'.format(self.name)
