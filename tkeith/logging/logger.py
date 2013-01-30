@@ -158,22 +158,3 @@ class Logger(object):
                 logger.current_parent = logger.current_parent.parent
 
         self.Log = Log
-
-class FakeLogger(object):
-
-    def __init__(self):
-
-        class Log(object):
-
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def __enter__(self):
-                pass
-
-            def __exit__(self, *args):
-                pass
-
-        self.Log = Log
-
-fake_logger = FakeLogger()
