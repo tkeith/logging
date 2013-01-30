@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import orm
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session
 
 class Logger(object):
 
@@ -15,7 +16,8 @@ class Logger(object):
         self.db_engine = db_engine
         DBBase = declarative_base()
         self.DBBase = DBBase
-        db_session = orm.sessionmaker(bind=db_engine)()
+        db_session = scoped_session(orm.sessionmaker(bind=db_engine))
+        self.db_session = db_session
         self.current_parent = None
 
         @classmethod
