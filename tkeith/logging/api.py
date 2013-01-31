@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, request
 from flask.helpers import jsonify
 from werkzeug.exceptions import abort
+import json
 
 def log_for_response(log):
     return {'time': str(log.time),
@@ -18,20 +19,54 @@ def make_api(logger):
     def remove_session(exception):
         logger.db_session.remove()
 
-    @app.route("/tags/<tag_name>/logs/")
-    def get_tag_logs(tag_name):
-        logs = logger.Tag.get(tag_name).logs
-        return jsonify(logs=logs_for_response(logs))
-
-    @app.route("/params/<param_name>/values/<value_name>/logs/")
-    def get_value_logs(param_name, value_name):
-        return jsonify(logs=logs_for_response(logger.Value.get(logger.Param.get(param_name), value_name).logs))
-
     @app.route("/logs/<uuid>/")
     def get_log(uuid):
         log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
         if not log:
             abort(404)
         return jsonify(log=log_for_response(log))
+
+    @app.route("/logs/<uuid>/children/")
+    def get_log_children(uuid):
+        offset = int(request.args['offset'])
+        limit = int(request.args['limit'])
+        log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
+        if not log:
+            abort(404)
+        query = logger.db_session.query(logger.Log).filter(logger.Log.parent == log)
+        count = query.count()
+        query = query.order_by(logger.Log.time.desc()).offset(offset).limit(limit)
+        logs = query.all()
+        return jsonify(logs=logs_for_response(logs), count=count)
+
+    @app.route("/logs/")
+    def get_logs():
+        if 'tags' in request.args:
+            tags = json.loads(request.args['tags'])
+        else:
+            tags = []
+
+        if 'params' in request.args:
+            params = json.loads(request.args['params'])
+        else:
+            params = {}
+
+        offset = int(request.args['offset'])
+        limit = int(request.args['limit'])
+
+        query = logger.db_session.query(logger.Log)
+
+        for tag_name in tags:
+            query = query.filter(logger.Log.tags.any(logger.Tag.name == tag_name))
+
+        for param, value in params.items():
+            query = query.join(logger.Log.values).filter(logger.Value.name == value).distinct().join(logger.Value.param).filter(logger.Param.name == param).distinct()
+
+        count = query.count()
+
+        query = query.order_by(logger.Log.time.desc()).offset(offset).limit(limit)
+
+        logs = query.all()
+        return jsonify(logs=logs_for_response(logs), count=count)
 
     return app
