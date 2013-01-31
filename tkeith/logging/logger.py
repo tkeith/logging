@@ -123,7 +123,6 @@ class Logger(object):
             id = sa.Column(sa.Integer, primary_key=True)
             uuid = sa.Column(sa.String)
             time = sa.Column(sa.DateTime)
-            message = sa.Column(sa.String)
             parent_id = sa.Column(sa.Integer, sa.ForeignKey('logger_logs.id'))
             parent = orm.relationship('Log', remote_side=[id], backref='children')
             tags = orm.relationship('Tag', secondary=LogTag.__table__, order_by=LogTag.index, backref='logs')
