@@ -3,6 +3,8 @@ from flask.helpers import jsonify
 from werkzeug.exceptions import abort
 import json
 from flask.blueprints import Blueprint
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import and_
 
 def log_for_response(log):
     return {'time': str(log.time),
@@ -14,20 +16,20 @@ def logs_for_response(logs):
     return [log_for_response(log) for log in logs]
 
 def make_blueprint(logger):
-    blueprint = Blueprint('logger', __name__)
+    bp = Blueprint('logger', __name__)
 
-    @blueprint.teardown_request
+    @bp.teardown_request
     def remove_session(exception):
         logger.db_session.remove()
 
-    @blueprint.route("/logs/<uuid>/")
+    @bp.route("/logs/<uuid>/")
     def get_log(uuid):
         log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
         if not log:
             abort(404)
         return jsonify(log=log_for_response(log))
 
-    @blueprint.route("/logs/<uuid>/children/")
+    @bp.route("/logs/<uuid>/children/")
     def get_log_children(uuid):
         offset = int(request.args['offset'])
         limit = int(request.args['limit'])
@@ -40,7 +42,7 @@ def make_blueprint(logger):
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
 
-    @blueprint.route("/logs/")
+    @bp.route("/logs/")
     def get_logs():
         if 'tags' in request.args:
             tags = json.loads(request.args['tags'])
@@ -70,7 +72,22 @@ def make_blueprint(logger):
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
 
-    return blueprint
+    @bp.before_request
+    def authenticate():
+        if request.method == 'GET':
+            params = request.args
+        else:
+            params = request.form
+        username = params['username']
+        password = params['password']
+        try:
+            user = logger.db_session.query(logger.User)\
+                .filter(and_(logger.User.username == username,
+                             logger.User.password == password)).one()
+        except NoResultFound:
+            abort(403)
+
+    return bp
 
 def make_app(logger):
     app = Flask(__name__)

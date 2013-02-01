@@ -159,3 +159,16 @@ class Logger(object):
                 logger.current_parent = logger.current_parent.parent
 
         self.Log = Log
+
+        class User(logger.DBBase):
+            __tablename__ = 'logger_users'
+
+            id = sa.Column(sa.Integer, primary_key=True)
+            username = sa.Column(sa.String)
+            password = sa.Column(sa.String)
+
+            def __init__(self, username, password):
+                self.username = username
+                self.password = password
+
+        self.User = User
