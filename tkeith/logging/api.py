@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask.helpers import jsonify
 from werkzeug.exceptions import abort
 import json
+from flask.blueprints import Blueprint
 
 def log_for_response(log):
     return {'time': str(log.time),
@@ -12,21 +13,21 @@ def log_for_response(log):
 def logs_for_response(logs):
     return [log_for_response(log) for log in logs]
 
-def make_api(logger):
-    app = Flask(__name__)
+def make_blueprint(logger):
+    blueprint = Blueprint('logger', __name__)
 
-    @app.teardown_request
+    @blueprint.teardown_request
     def remove_session(exception):
         logger.db_session.remove()
 
-    @app.route("/logs/<uuid>/")
+    @blueprint.route("/logs/<uuid>/")
     def get_log(uuid):
         log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
         if not log:
             abort(404)
         return jsonify(log=log_for_response(log))
 
-    @app.route("/logs/<uuid>/children/")
+    @blueprint.route("/logs/<uuid>/children/")
     def get_log_children(uuid):
         offset = int(request.args['offset'])
         limit = int(request.args['limit'])
@@ -39,7 +40,7 @@ def make_api(logger):
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
 
-    @app.route("/logs/")
+    @blueprint.route("/logs/")
     def get_logs():
         if 'tags' in request.args:
             tags = json.loads(request.args['tags'])
@@ -69,4 +70,9 @@ def make_api(logger):
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
 
+    return blueprint
+
+def make_app(logger):
+    app = Flask(__name__)
+    app.register_blueprint(make_blueprint(logger))
     return app
