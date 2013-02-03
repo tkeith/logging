@@ -5,6 +5,7 @@ import json
 from flask.blueprints import Blueprint
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import and_
+from functools import wraps
 
 def log_for_response(log):
     return {'time': str(log.time),
@@ -18,11 +19,35 @@ def logs_for_response(logs):
 def make_blueprint(logger):
     bp = Blueprint('logger', __name__)
 
+    def check_auth(username, password):
+        try:
+            user = logger.db_session.query(logger.User)\
+                .filter(and_(logger.User.username == username,
+                             logger.User.password == password)).one()
+        except NoResultFound:
+            return False
+        return True
+
+    def authed(fn):
+        @wraps(fn)
+        def new(*args, **kwargs):
+            if request.authorization is not None and check_auth(request.authorization.username, request.authorization.password):
+                return fn(*args, **kwargs)
+            abort(401)
+        return new
+
     @bp.teardown_request
     def remove_session(exception):
         logger.db_session.remove()
 
+    @bp.route('/users/')
+    def get_users():
+        if check_auth(request.args['username'], request.args['password']):
+            return jsonify()
+        abort(404)
+
     @bp.route("/logs/<uuid>/")
+    @authed
     def get_log(uuid):
         log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
         if not log:
@@ -30,6 +55,7 @@ def make_blueprint(logger):
         return jsonify(log=log_for_response(log))
 
     @bp.route("/logs/<uuid>/children/")
+    @authed
     def get_log_children(uuid):
         offset = int(request.args['offset'])
         limit = int(request.args['limit'])
@@ -43,6 +69,7 @@ def make_blueprint(logger):
         return jsonify(logs=logs_for_response(logs), count=count)
 
     @bp.route("/logs/")
+    @authed
     def get_logs():
         if 'tags' in request.args:
             tags = json.loads(request.args['tags'])
@@ -71,21 +98,6 @@ def make_blueprint(logger):
 
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
-
-    @bp.before_request
-    def authenticate():
-        if request.method == 'GET':
-            params = request.args
-        else:
-            params = request.form
-        username = params['username']
-        password = params['password']
-        try:
-            user = logger.db_session.query(logger.User)\
-                .filter(and_(logger.User.username == username,
-                             logger.User.password == password)).one()
-        except NoResultFound:
-            abort(403)
 
     return bp
 
