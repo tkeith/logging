@@ -11,7 +11,8 @@ def log_for_response(log):
     return {'time': str(log.time),
             'uuid': str(log.uuid),
             'tags': [tag.name for tag in log.tags],
-            'values': dict([(value.param.name, value.name) for value in log.values])}
+            'values': dict([(value.param.name, value.name) for value in log.values]),
+            'n_children': len(log.children)}
 
 def logs_for_response(logs):
     return [log_for_response(log) for log in logs]
