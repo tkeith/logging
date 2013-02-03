@@ -37,7 +37,7 @@ def make_blueprint(logger):
         return new
 
     @bp.teardown_request
-    def remove_session(exception):
+    def remove_db_session(exception):
         logger.db_session.remove()
 
     @bp.route('/users/')
