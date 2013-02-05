@@ -4,6 +4,7 @@ from sqlalchemy import orm
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session
+from tkeith.sa_types import UUID
 
 class Logger(object):
 
@@ -31,12 +32,13 @@ class Logger(object):
         class Value(DBBase):
             __tablename__ = 'logger_values'
 
-            id = sa.Column(sa.Integer, primary_key=True)
-            param_id = sa.Column(sa.Integer, sa.ForeignKey('logger_params.id'))
+            id = sa.Column(UUID, primary_key=True)
+            param_id = sa.Column(UUID, sa.ForeignKey('logger_params.id'))
             param = orm.relationship('Param', backref='values')
             name = sa.Column(sa.String)
 
             def __init__(self, param, name):
+                self.id = uuid4()
                 self.param = param
                 self.name = name
                 db_session.add(self)
@@ -58,10 +60,11 @@ class Logger(object):
         class Param(DBBase):
             __tablename__ = 'logger_params'
 
-            id = sa.Column(sa.Integer, primary_key=True)
+            id = sa.Column(UUID, primary_key=True)
             name = sa.Column(sa.String)
 
             def __init__(self, name):
+                self.id = uuid4()
                 self.name = name
                 db_session.add(self)
                 db_session.commit()
@@ -79,10 +82,11 @@ class Logger(object):
         class Tag(DBBase):
             __tablename__ = 'logger_tags'
 
-            id = sa.Column(sa.Integer, primary_key=True)
+            id = sa.Column(UUID, primary_key=True)
             name = sa.Column(sa.String)
 
             def __init__(self, name):
+                self.id = uuid4()
                 self.name = name
                 db_session.add(self)
                 db_session.commit()
@@ -97,50 +101,64 @@ class Logger(object):
         class LogValue(DBBase):
             __tablename__ = 'logger_log_values'
 
-            id = sa.Column(sa.Integer, primary_key=True)
-            log_id = sa.Column(sa.Integer, sa.ForeignKey('logger_logs.id'))
+            id = sa.Column(UUID, primary_key=True)
+            log_id = sa.Column(UUID, sa.ForeignKey('logger_logs.id'))
             log = orm.relationship('Log', backref='log_values')
-            value_id = sa.Column(sa.Integer, sa.ForeignKey('logger_values.id'))
+            value_id = sa.Column(UUID, sa.ForeignKey('logger_values.id'))
             value = orm.relationship('Value', backref='log_values')
+
+            def __init__(self, log, value):
+                self.id = uuid4()
+                self.log = log
+                self.value = value
 
         self.LogValue = LogValue
 
         class LogTag(DBBase):
             __tablename__ = 'logger_log_tags'
 
-            id = sa.Column(sa.Integer, primary_key=True)
+            id = sa.Column(UUID, primary_key=True)
             index = sa.Column(sa.Integer)
-            log_id = sa.Column(sa.Integer, sa.ForeignKey('logger_logs.id'))
+            log_id = sa.Column(UUID, sa.ForeignKey('logger_logs.id'))
             log = orm.relationship('Log', backref='log_tags')
-            tag_id = sa.Column(sa.Integer, sa.ForeignKey('logger_tags.id'))
+            tag_id = sa.Column(UUID, sa.ForeignKey('logger_tags.id'))
             tag = orm.relationship('Tag', backref='log_tags')
+
+            def __init__(self, log, tag, index):
+                self.id = uuid4()
+                self.log = log
+                self.tag = tag
+                self.index = index
 
         self.LogTag = LogTag
 
         class Log(DBBase):
             __tablename__ = 'logger_logs'
 
-            id = sa.Column(sa.Integer, primary_key=True)
-            uuid = sa.Column(sa.String)
+            id = sa.Column(UUID, primary_key=True)
             time = sa.Column(sa.DateTime)
-            parent_id = sa.Column(sa.Integer, sa.ForeignKey('logger_logs.id'))
+            parent_id = sa.Column(UUID, sa.ForeignKey('logger_logs.id'))
             parent = orm.relationship('Log', remote_side=[id], backref='children')
             tags = orm.relationship('Tag', secondary=LogTag.__table__, order_by=LogTag.index, backref='logs')
             values = orm.relationship('Value', secondary=LogValue.__table__, backref='logs')
 
             def __init__(self, *args, **kwargs):
-                self.uuid = str(uuid4())
+                self.id = uuid4()
                 self.time = datetime.now()
                 self.parent = logger.current_parent
 
+                i = 0
                 for tag_name in args:
                     tag = Tag.get(tag_name)
-                    self.tags.append(tag)
+                    log_tag = LogTag(self, tag, i)
+                    db_session.add(log_tag)
+                    i += 1
 
                 for name, value in kwargs.items():
                     param = Param.get(name)
                     value = param.value(value)
-                    self.values.append(value)
+                    log_value = LogValue(self, value)
+                    db_session.add(log_value)
 
                 db_session.add(self)
                 db_session.commit()
@@ -163,11 +181,12 @@ class Logger(object):
         class User(logger.DBBase):
             __tablename__ = 'logger_users'
 
-            id = sa.Column(sa.Integer, primary_key=True)
+            id = sa.Column(UUID, primary_key=True)
             username = sa.Column(sa.String)
             password = sa.Column(sa.String)
 
             def __init__(self, username, password):
+                self.id = uuid4()
                 self.username = username
                 self.password = password
 

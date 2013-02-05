@@ -6,10 +6,11 @@ from flask.blueprints import Blueprint
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import and_
 from functools import wraps
+from uuid import uuid4
 
 def log_for_response(log):
     return {'time': str(log.time),
-            'uuid': str(log.uuid),
+            'id': str(log.id),
             'tags': [tag.name for tag in log.tags],
             'values': dict([(value.param.name, value.name) for value in log.values]),
             'n_children': len(log.children)}
@@ -47,20 +48,20 @@ def make_blueprint(logger):
             return jsonify()
         abort(404)
 
-    @bp.route("/logs/<uuid>/")
+    @bp.route("/logs/<id>/")
     @authed
-    def get_log(uuid):
-        log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
+    def get_log(id):
+        log = logger.db_session.query(logger.Log).filter(logger.Log.id == uuid4(id)).first()
         if not log:
             abort(404)
         return jsonify(log=log_for_response(log))
 
-    @bp.route("/logs/<uuid>/children/")
+    @bp.route("/logs/<id>/children/")
     @authed
-    def get_log_children(uuid):
+    def get_log_children(id):
         offset = int(request.args['offset'])
         limit = int(request.args['limit'])
-        log = logger.db_session.query(logger.Log).filter(logger.Log.uuid == uuid).first()
+        log = logger.db_session.query(logger.Log).filter(logger.Log.id == uuid4(id)).first()
         if not log:
             abort(404)
         query = logger.db_session.query(logger.Log).filter(logger.Log.parent == log)
