@@ -12,7 +12,7 @@ def log_for_response(log):
     return {'time': str(log.time),
             'id': str(log.id),
             'tags': [tag.name for tag in log.tags],
-            'values': dict([(value.param.name, value.name) for value in log.values]),
+            'params': dict([(value.param.name, value.name) for value in log.values]),
             'num_children': len(log.children)}
 
 def logs_for_response(logs):
