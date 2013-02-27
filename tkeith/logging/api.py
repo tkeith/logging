@@ -59,14 +59,16 @@ def make_blueprint(logger):
     @bp.route("/logs/<id>/children/")
     @authed
     def get_log_children(id):
-        offset = int(request.args['offset'])
-        limit = int(request.args['limit'])
         log = logger.db_session.query(logger.Log).filter(logger.Log.id == uuid4(id)).first()
         if not log:
             abort(404)
         query = logger.db_session.query(logger.Log).filter(logger.Log.parent == log)
         count = query.count()
-        query = query.order_by(logger.Log.time.desc()).offset(offset).limit(limit)
+        query = query.order_by(logger.Log.time.desc())
+        if 'offset' in request.args:
+            query = query.offset(int(request.args['offset']))
+        if 'limit' in request.args:
+            query = query.limit(int(request.args['limit']))
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
 
@@ -83,9 +85,6 @@ def make_blueprint(logger):
         else:
             params = {}
 
-        offset = int(request.args['offset'])
-        limit = int(request.args['limit'])
-
         query = logger.db_session.query(logger.Log)
 
         for tag_name in tags:
@@ -96,7 +95,12 @@ def make_blueprint(logger):
 
         count = query.count()
 
-        query = query.order_by(logger.Log.time.desc()).offset(offset).limit(limit)
+        query = query.order_by(logger.Log.time.desc())
+
+        if 'offset' in request.args:
+            query = query.offset(int(request.args['offset']))
+        if 'limit' in request.args:
+            query = query.limit(int(request.args['limit']))
 
         logs = query.all()
         return jsonify(logs=logs_for_response(logs), count=count)
