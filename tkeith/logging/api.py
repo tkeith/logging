@@ -6,7 +6,7 @@ from flask.blueprints import Blueprint
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import and_
 from functools import wraps
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 def log_for_response(log):
     return {'time': str(log.time),
@@ -51,7 +51,7 @@ def make_blueprint(logger):
     @bp.route("/logs/<id>/")
     @authed
     def get_log(id):
-        log = logger.db_session.query(logger.Log).filter(logger.Log.id == uuid4(id)).first()
+        log = logger.db_session.query(logger.Log).filter(logger.Log.id == UUID(id)).first()
         if not log:
             abort(404)
         return jsonify(log=log_for_response(log))
@@ -59,7 +59,7 @@ def make_blueprint(logger):
     @bp.route("/logs/<id>/children/")
     @authed
     def get_log_children(id):
-        log = logger.db_session.query(logger.Log).filter(logger.Log.id == uuid4(id)).first()
+        log = logger.db_session.query(logger.Log).filter(logger.Log.id == UUID(id)).first()
         if not log:
             abort(404)
         query = logger.db_session.query(logger.Log).filter(logger.Log.parent == log)
