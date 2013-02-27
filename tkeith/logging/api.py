@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask.helpers import jsonify
 from werkzeug.exceptions import abort
 import json
@@ -35,7 +35,7 @@ def make_blueprint(logger):
         def new(*args, **kwargs):
             if request.authorization is not None and check_auth(request.authorization.username, request.authorization.password):
                 return fn(*args, **kwargs)
-            abort(401)
+            return Response('', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
         return new
 
     @bp.teardown_request
