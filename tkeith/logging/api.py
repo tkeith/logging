@@ -13,7 +13,7 @@ def log_for_response(log):
             'id': str(log.id),
             'tags': [tag.name for tag in log.tags],
             'values': dict([(value.param.name, value.name) for value in log.values]),
-            'n_children': len(log.children)}
+            'num_children': len(log.children)}
 
 def logs_for_response(logs):
     return [log_for_response(log) for log in logs]
