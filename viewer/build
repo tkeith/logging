@@ -1,0 +1,10 @@
+#!/bin/bash
+
+dir=`dirname $0`
+cd "${dir}"
+rm -r out
+mkdir out
+jade src --out out
+coffee --compile --output out src
+lessc src/*.less > out/style.css
+cp -a lib out

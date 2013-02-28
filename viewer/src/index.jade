@@ -1,0 +1,71 @@
+!!! 5
+html
+  head
+    link(rel='stylesheet', href='./lib/bootstrap/css/bootstrap.css')
+    link(rel='stylesheet', href='./style.css')
+
+  body
+    .container
+      .navbar.spaced
+        .navbar-inner
+          span.brand Log Viewer
+      .well
+        form#search-form
+          .row
+            .span4
+              legend Tags
+              #tag-inputs
+            .span7
+              legend Parameters
+              #param-inputs
+          button.btn.btn-primary Search
+      #logs
+
+  #templates
+    .tag-input-line
+      input(type='text', placeholder='Tag').tag-input.search-input
+    .param-input-line
+      input(type='text', placeholder='Key').key-input.search-input
+      input(type='text', placeholder='Value').value-input.search-input
+    .log
+      .time
+      .tags
+      .params
+      .children.hide
+        p Loading...
+      .show-children-container.hide
+        a(href='#').show-children.btn.btn-small.btn-primary Show children
+    .tag
+    .param
+      .key
+      .value
+
+  #modals
+    #login-modal.modal.hide.fade(data-backdrop='static', data-keyboard='false')
+      form#login-form.form-horizontal.modal-form
+        .modal-header
+          h3 Log In
+        .modal-body
+          .control-group
+            label.control-label(for='login-username-input') Username
+            .controls
+              input#login-username-input(type='text')
+          .control-group
+            label.control-label(for='login-password-input') Password
+            .controls
+              input#login-password-input(type='password')
+          .control-group
+            .controls
+              label.checkbox
+                input#save-password(type='checkbox')
+                | Save password
+          #login-error.alert.alert-error.hide Invalid login information
+        .modal-footer
+          button.btn.btn-primary(type='submit') Log in
+
+  script(type='text/javascript', src='./lib/jquery.js')
+  script(type='text/javascript', src='./lib/bootstrap/js/bootstrap.js')
+  script(type='text/javascript', src='./lib/jquery.cookie.js')
+  script(type='text/javascript', src='./lib/underscore.js')
+  script(type='text/javascript', src='./lib/backbone.js')
+  script(type='text/javascript', src='./main.js')
